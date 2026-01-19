@@ -7,6 +7,6 @@
   ],
   "name": "salesforce_projet_4",
   "namespace": "",
-  "sfdcLoginUrl": "https://login.salesforce.com",
-  "sourceApiVersion": "59.0"
+  "sfdcLoginUrl": "https://creative-panda-6p8q6z-dev-ed.trailblaze.lightning.force.com",
+  "sourceApiVersion": "65.0"
 }
