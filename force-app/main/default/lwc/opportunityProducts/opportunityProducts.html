@@ -1,5 +1,21 @@
 <template>
     <lightning-card title="Opportunity Products" icon-name="standard:opportunity">
-        <p class="slds-p-horizontal_small">Composant en cours de développement…</p>
+        <p class="slds-p-horizontal_small">
+
+    <template if:false={hasProducts}>
+    <div class="slds-p-around_medium">
+        <p>Vous n'avez aucune ligne de produit pour le moment</p>
+        <p>1. Veuillez d'abord Sélectionner un Catalogue (Pricebook)</p>
+        <p>2. Sélectionnez ensuite les produits à ajouter</p>
+    </div>
+    </template>
+
+    <template if:true={hasProducts}>
+         <!-- Ici tu mettras la DataTable dans la prochaine tâche --> 
+    </template>
+
+
+</p>
     </lightning-card>
-</template>
+
+    </template>
