@@ -11,7 +11,11 @@
     </template>
 
     <template if:true={hasProducts}>
-         <!-- Ici tu mettras la DataTable dans la prochaine tâche --> 
+         <lightning-datatable key-field="Id" 
+            data={products} 
+            columns={columns} 
+            hide-checkbox-column 
+            onrowaction={handleRowAction}> </lightning-datatable>
     </template>
 
 
