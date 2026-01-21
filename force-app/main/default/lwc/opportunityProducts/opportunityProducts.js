@@ -66,14 +66,7 @@ export default class OpportunityProducts extends LightningElement {
 
         if (this.isAdmin) {
             baseColumns.push({
-                label: 'Voir produit',
-                type: 'button-icon',
-                typeAttributes: {
-                    iconName: 'utility:preview',
-                    name: 'view_product',
-                    alternativeText: 'Voir produit',
-                    title: 'Voir produit',
-                    variant: 'bare'
+                label: 'Voir produit', type: 'button', typeAttributes: { label: 'Voir produit', name: 'view_product', iconName: 'utility:preview', variant: 'brand-outline'
                 }
             });
         }
