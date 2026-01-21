@@ -1,12 +1,17 @@
 public with sharing class ProfileSelector {
 
+    @AuraEnabled(cacheable=true)
     public static String getCurrentUserProfileName() {
-        User u = [
+        return [
             SELECT Profile.Name
             FROM User
             WHERE Id = :UserInfo.getUserId()
             LIMIT 1
-        ];
-        return u.Profile.Name;
+        ].Profile.Name;
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static String getCurrentUserProfileId() {
+        return UserInfo.getProfileId();
     }
 }

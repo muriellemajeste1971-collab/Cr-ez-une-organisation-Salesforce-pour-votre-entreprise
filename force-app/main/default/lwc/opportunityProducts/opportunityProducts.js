@@ -1,48 +1,90 @@
 import { LightningElement, api, wire } from 'lwc';
 import getProducts from '@salesforce/apex/OpportunityProductsController.getProducts';
+import getCurrentUserProfileId from '@salesforce/apex/ProfileSelector.getCurrentUserProfileId';
+import getCurrentUserProfileName from '@salesforce/apex/ProfileSelector.getCurrentUserProfileName';
 
 export default class OpportunityProducts extends LightningElement {
     @api recordId;
     products = [];
+    profileName;
+    profileId;
 
-    columns = [
-        { label: 'Nom du produit', fieldName: 'productName', type: 'text' },
-        { label: 'Prix unitaire', fieldName: 'UnitPrice', type: 'currency' },
-        { label: 'Prix total', fieldName: 'TotalPrice', type: 'currency' },
-        { label: 'Quantité', fieldName: 'Quantity', type: 'number' },
-        { label: 'Stock restant', fieldName: 'QuantityInStock__c', type: 'number' },
+    // Colonnes dynamiques (remplies après chargement du profil)
+    columns = [];
 
-        // 🗑️ Supprimer (en premier)
-        {
-            label: 'Supprimer',
-            type: 'button-icon',
-            typeAttributes: {
-                iconName: 'utility:delete',
-                name: 'delete_line',
-                alternativeText: 'Supprimer',
-                title: 'Supprimer',
-                variant: 'bare'
-            }
-        },
-
-        // 👁️ Voir produit (en deuxième)
-        {
-            label: 'Voir produit',
-            type: 'button-icon',
-            typeAttributes: {
-                iconName: 'utility:preview',
-                name: 'view_product',
-                alternativeText: 'Voir produit',
-                title: 'Voir produit',
-                variant: 'bare'
-            }
+    // Récupération du nom du profil (pour le titre)
+    @wire(getCurrentUserProfileName)
+    wiredProfileName({ data, error }) {
+        if (data) {
+            this.profileName = data;
+        } else if (error) {
+            console.error(error);
         }
-    ];
+    }
 
+    // Récupération du ProfileId (pour savoir si Admin)
+    @wire(getCurrentUserProfileId)
+    wiredProfileId({ data, error }) {
+        if (data) {
+            this.profileId = data;
+            this.setColumns(); // <-- Mise à jour des colonnes ici
+        } else if (error) {
+            console.error(error);
+        }
+    }
+
+    // Titre dynamique
+    get dynamicTitle() {
+        return `Opportunity Products (${this.profileName})`;
+    }
+
+    // Vérification Admin via ProfileId
+    get isAdmin() {
+        return this.profileId === '00ed200000F8HRFAA3'; // Ton ID Admin
+    }
+
+    // Construction dynamique des colonnes
+    setColumns() {
+        const baseColumns = [
+            { label: 'Nom du produit', fieldName: 'productName', type: 'text' },
+            { label: 'Prix unitaire', fieldName: 'UnitPrice', type: 'currency' },
+            { label: 'Prix total', fieldName: 'TotalPrice', type: 'currency' },
+            { label: 'Quantité', fieldName: 'Quantity', type: 'number' },
+            { label: 'Stock restant', fieldName: 'QuantityInStock__c', type: 'number' },
+            {
+                label: 'Supprimer',
+                type: 'button-icon',
+                typeAttributes: {
+                    iconName: 'utility:delete',
+                    name: 'delete_line',
+                    alternativeText: 'Supprimer',
+                    title: 'Supprimer',
+                    variant: 'bare'
+                }
+            }
+        ];
+
+        if (this.isAdmin) {
+            baseColumns.push({
+                label: 'Voir produit',
+                type: 'button-icon',
+                typeAttributes: {
+                    iconName: 'utility:preview',
+                    name: 'view_product',
+                    alternativeText: 'Voir produit',
+                    title: 'Voir produit',
+                    variant: 'bare'
+                }
+            });
+        }
+
+        this.columns = baseColumns;
+    }
+
+    // Récupération des produits
     @wire(getProducts, { opportunityId: '$recordId' })
     wiredProducts({ data, error }) {
         if (data) {
-            console.log('Produits reçus :', data);
             this.products = data.map(item => ({
                 Id: item.Id,
                 UnitPrice: item.UnitPrice,
@@ -68,15 +110,10 @@ export default class OpportunityProducts extends LightningElement {
         switch (actionName) {
             case 'delete_line':
                 console.log('Supprimer ligne : ', row);
-                // TODO: appel Apex pour supprimer la ligne
                 break;
 
             case 'view_product':
                 console.log('Voir produit : ', row);
-                // TODO: navigation vers la fiche produit
-                break;
-
-            default:
                 break;
         }
     }
