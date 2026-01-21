@@ -3,6 +3,7 @@ public with sharing class ProductSelector {
     return [
         SELECT Id,
                PricebookEntry.Product2.Name,
+               PricebookEntry.Product2.Id,
                UnitPrice,
                TotalPrice,
                Quantity,

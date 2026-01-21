@@ -6,4 +6,9 @@ public with sharing class OpportunityProductsController {
         return ProductSelector.getProductsByOpportunityId(opportunityId);
 
     }
+
+    @AuraEnabled
+    public static void deleteOpportunityLine(Id oppLineId) {
+    delete [SELECT Id FROM OpportunityLineItem WHERE Id = :oppLineId];
+}
 }

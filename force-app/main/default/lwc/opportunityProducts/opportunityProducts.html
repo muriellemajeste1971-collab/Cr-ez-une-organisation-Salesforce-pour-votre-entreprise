@@ -2,6 +2,15 @@
     <lightning-card title={dynamicTitle} icon-name="standard:opportunity">
         <p class="slds-p-horizontal_small">
 
+    <template if:true={hasStockError}> 
+      <div class="slds-box slds-theme_alert-texture slds-theme_warning slds-m-bottom_medium"> 
+      <p class="slds-text-color_default">
+                Vous avez au moins une ligne avec un problème de quantité. Veuillez supprimer cette ligne ou réduire la quantité.<br/>
+                Si vous avez absolument besoin de plus de véhicules, veuillez contacter votre Administrateur Système. 
+            </p> 
+        </div> 
+    </template>
+
     <template if:false={hasProducts}>
     <div class="slds-p-around_medium">
         <p>Vous n'avez aucune ligne de produit pour le moment</p>
@@ -15,9 +24,12 @@
             data={products} 
             columns={columns} 
             hide-checkbox-column 
-            onrowaction={handleRowAction}> </lightning-datatable>
+            onrowaction={handleRowAction}
+            row-class={getRowClass}> 
+        </lightning-datatable>
     </template>
 
+  
 
 </p>
     </lightning-card>

@@ -2,17 +2,111 @@ import { LightningElement, api, wire } from 'lwc';
 import getProducts from '@salesforce/apex/OpportunityProductsController.getProducts';
 import getCurrentUserProfileId from '@salesforce/apex/ProfileSelector.getCurrentUserProfileId';
 import getCurrentUserProfileName from '@salesforce/apex/ProfileSelector.getCurrentUserProfileName';
+import deleteOpportunityLine from '@salesforce/apex/OpportunityProductsController.deleteOpportunityLine'; 
+import { refreshApex } from '@salesforce/apex';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import { NavigationMixin } from 'lightning/navigation';
 
-export default class OpportunityProducts extends LightningElement {
+
+export default class OpportunityProducts extends NavigationMixin(LightningElement) {
     @api recordId;
     products = [];
     profileName;
     profileId;
 
-    // Colonnes dynamiques (remplies après chargement du profil)
+    // Pour refreshApex
+    wiredProductsResult;
+
+    // Wire UNIQUE et fonctionnel
+@wire(getProducts, { opportunityId: '$recordId' })
+wiredProducts(result) {
+    this.wiredProductsResult = result;
+
+    if (result.data) {
+        this.products = result.data.map(item => {
+            const diff = item.PricebookEntry?.Product2?.QuantityInStock__c - item.Quantity;
+
+            return {
+                Id: item.Id,
+                UnitPrice: item.UnitPrice,
+                TotalPrice: item.TotalPrice,
+                Quantity: item.Quantity,
+                productName: item.PricebookEntry?.Product2?.Name,
+                QuantityInStock__c: item.PricebookEntry?.Product2?.QuantityInStock__c,
+                productId: item.PricebookEntry?.Product2?.Id,
+
+                // Tu avais déjà stockDiff, je le garde
+                stockDiff: diff,
+
+                // 🔥 Ajout de la classe CSS conditionnelle
+                quantityClass: diff < 0 ? 'slds-text-color_error slds-theme_shade' : '', 
+                rowClass: diff < 0 ? 'slds-text-color_error slds-theme_shade' : ''
+            };
+        });
+
+        this.hasStockError = this.products.some(p => p.stockDiff < 0);
+
+    } else if (result.error) {
+        console.error('Erreur lors du chargement des produits :', result.error);
+        this.products = [];
+    }
+}
+
+
+    // Toast générique
+    showToast(title, message, variant) {
+        this.dispatchEvent(
+            new ShowToastEvent({
+                title,
+                message,
+                variant
+            })
+        );
+    }
+
+    // Actions du tableau
+    handleRowAction(event) {
+        const actionName = event.detail.action.name;
+        const row = event.detail.row;
+
+        switch (actionName) {
+            case 'delete_line':
+                this.deleteLine(row.Id);
+                break;
+
+            case 'view_product':
+                this.navigateToProduct(row.productId);
+                break;
+        }
+    }
+    // Navigation vers la fiche produit
+    navigateToProduct(productId) {
+    this[NavigationMixin.Navigate]({
+        type: 'standard__recordPage',
+        attributes: {
+            recordId: productId,
+            objectApiName: 'Product2',
+            actionName: 'view'
+        }
+    });
+}
+
+
+    // Suppression + refresh automatique
+    deleteLine(lineId) {
+        deleteOpportunityLine({ oppLineId: lineId })
+            .then(() => {
+                this.showToast('Succès', 'Ligne supprimée', 'success');
+                return refreshApex(this.wiredProductsResult);
+            })
+            .catch(error => {
+                this.showToast('Erreur', error.body.message, 'error');
+            });
+    }
+
+    // Colonnes dynamiques
     columns = [];
 
-    // Récupération du nom du profil (pour le titre)
     @wire(getCurrentUserProfileName)
     wiredProfileName({ data, error }) {
         if (data) {
@@ -22,34 +116,36 @@ export default class OpportunityProducts extends LightningElement {
         }
     }
 
-    // Récupération du ProfileId (pour savoir si Admin)
     @wire(getCurrentUserProfileId)
     wiredProfileId({ data, error }) {
         if (data) {
             this.profileId = data;
-            this.setColumns(); // <-- Mise à jour des colonnes ici
+            this.setColumns();
         } else if (error) {
             console.error(error);
         }
     }
 
-    // Titre dynamique
     get dynamicTitle() {
         return `Opportunity Products (${this.profileName})`;
     }
 
-    // Vérification Admin via ProfileId
     get isAdmin() {
-        return this.profileId === '00ed200000F8HRFAA3'; // Ton ID Admin
+        return this.profileId === '00ed200000F8HRFAA3';
     }
 
-    // Construction dynamique des colonnes
     setColumns() {
         const baseColumns = [
             { label: 'Nom du produit', fieldName: 'productName', type: 'text' },
             { label: 'Prix unitaire', fieldName: 'UnitPrice', type: 'currency' },
             { label: 'Prix total', fieldName: 'TotalPrice', type: 'currency' },
-            { label: 'Quantité', fieldName: 'Quantity', type: 'number' },
+            { 
+                label: 'Quantité', 
+                fieldName: 'Quantity', 
+                type: 'number', 
+                cellAttributes: { class: { fieldName: 'quantityClass' } 
+                } 
+            },
             { label: 'Stock restant', fieldName: 'QuantityInStock__c', type: 'number' },
             {
                 label: 'Supprimer',
@@ -66,7 +162,13 @@ export default class OpportunityProducts extends LightningElement {
 
         if (this.isAdmin) {
             baseColumns.push({
-                label: 'Voir produit', type: 'button', typeAttributes: { label: 'Voir produit', name: 'view_product', iconName: 'utility:preview', variant: 'brand-outline'
+                label: 'Voir produit',
+                type: 'button',
+                typeAttributes: {
+                    label: 'Voir produit',
+                    name: 'view_product',
+                    iconName: 'utility:preview',
+                    variant: 'brand-outline'
                 }
             });
         }
@@ -74,40 +176,11 @@ export default class OpportunityProducts extends LightningElement {
         this.columns = baseColumns;
     }
 
-    // Récupération des produits
-    @wire(getProducts, { opportunityId: '$recordId' })
-    wiredProducts({ data, error }) {
-        if (data) {
-            this.products = data.map(item => ({
-                Id: item.Id,
-                UnitPrice: item.UnitPrice,
-                TotalPrice: item.TotalPrice,
-                Quantity: item.Quantity,
-                productName: item.PricebookEntry?.Product2?.Name,
-                QuantityInStock__c: item.PricebookEntry?.Product2?.QuantityInStock__c
-            }));
-        } else if (error) {
-            console.error('Erreur lors du chargement des produits :', error);
-            this.products = [];
-        }
+    getRowClass(row) { 
+        return row.rowClass; 
     }
 
     get hasProducts() {
         return Array.isArray(this.products) && this.products.length > 0;
-    }
-
-    handleRowAction(event) {
-        const actionName = event.detail.action.name;
-        const row = event.detail.row;
-
-        switch (actionName) {
-            case 'delete_line':
-                console.log('Supprimer ligne : ', row);
-                break;
-
-            case 'view_product':
-                console.log('Voir produit : ', row);
-                break;
-        }
     }
 }
