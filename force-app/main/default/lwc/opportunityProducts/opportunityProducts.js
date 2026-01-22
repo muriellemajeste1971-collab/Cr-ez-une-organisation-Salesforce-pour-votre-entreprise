@@ -22,6 +22,9 @@ import OPTY_COL_VIEW_PRODUCT from '@salesforce/label/c.OPTY_COL_VIEW_PRODUCT';
 import OPTY_ACTION_DELETE from '@salesforce/label/c.OPTY_ACTION_DELETE';
 import OPTY_EMPTY_TEXT from '@salesforce/label/c.OPTY_EMPTY_TEXT';
 import OPTY_QUANTITY_WARNING_TEXT from '@salesforce/label/c.OPTY_QUANTITY_WARNING_TEXT';
+import TOAST_SUCCESS_TITLE from '@salesforce/label/c.TOAST_SUCCESS_TITLE';
+import TOAST_DELETE_LINE_SUCCESS from '@salesforce/label/c.TOAST_DELETE_LINE_SUCCESS';
+import TOAST_ERROR_TITLE from '@salesforce/label/c.TOAST_ERROR_TITLE';
 
 
 //rafraichissement auto au focus
@@ -145,11 +148,11 @@ wiredOpportunity({ data, error }) {
     deleteLine(lineId) {
         deleteOpportunityLine({ oppLineId: lineId })
             .then(() => {
-                this.showToast('Succès', 'Ligne supprimée', 'success');
+                this.showToast(TOAST_SUCCESS_TITLE, TOAST_DELETE_LINE_SUCCESS, 'success');
                 window.location.reload();
             })
             .catch(error => {
-                this.showToast('Erreur', error.body.message, 'error');
+                this.showToast(TOAST_ERROR_TITLE, error.body.message, 'error');
             });
     }
 
