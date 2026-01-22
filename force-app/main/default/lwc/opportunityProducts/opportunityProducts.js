@@ -7,6 +7,22 @@ import { refreshApex } from '@salesforce/apex';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { NavigationMixin } from 'lightning/navigation';
 
+//traduction internationale
+import OPTY_PRODUCTS from '@salesforce/label/c.OPTY_PRODUCTS';
+import SALES_REP from '@salesforce/label/c.SALES_REP';
+import OPTY_COL_PRODUCT_NAME from '@salesforce/label/c.OPTY_COL_PRODUCT_NAME';
+import OPTY_COL_UNIT_PRICE from '@salesforce/label/c.OPTY_COL_UNIT_PRICE';
+import OPTY_COL_TOTAL_PRICE from '@salesforce/label/c.OPTY_COL_TOTAL_PRICE';
+import OPTY_COL_QUANTITY from '@salesforce/label/c.OPTY_COL_QUANTITY';
+import OPTY_COL_STOCK_LEFT from '@salesforce/label/c.OPTY_COL_STOCK_LEFT';
+import OPTY_COL_DELETE from '@salesforce/label/c.OPTY_COL_DELETE';
+import OPTY_COL_VIEW_PRODUCT from '@salesforce/label/c.OPTY_COL_VIEW_PRODUCT';
+import OPTY_ACTION_DELETE from '@salesforce/label/c.OPTY_ACTION_DELETE';
+import OPTY_EMPTY_TEXT from '@salesforce/label/c.OPTY_EMPTY_TEXT';
+import OPTY_QUANTITY_WARNING_TEXT from '@salesforce/label/c.OPTY_QUANTITY_WARNING_TEXT';
+
+
+
 
 export default class OpportunityProducts extends NavigationMixin(LightningElement) {
     @api recordId;
@@ -127,54 +143,66 @@ wiredProducts(result) {
     }
 
     get dynamicTitle() {
-        return `Opportunity Products (${this.profileName})`;
+    if (this.profileName === 'Commercial') {
+        return `${OPTY_PRODUCTS} (${SALES_REP})`;
     }
+    return `${OPTY_PRODUCTS} (${this.profileName})`;
+    }
+
 
     get isAdmin() {
         return this.profileId === '00ed200000F8HRFAA3';
     }
+    
+    labels = {
+                emptyText: OPTY_EMPTY_TEXT,
+                quantityWarningText: OPTY_QUANTITY_WARNING_TEXT
+    };
+
 
     setColumns() {
-        const baseColumns = [
-            { label: 'Nom du produit', fieldName: 'productName', type: 'text' },
-            { label: 'Prix unitaire', fieldName: 'UnitPrice', type: 'currency' },
-            { label: 'Prix total', fieldName: 'TotalPrice', type: 'currency' },
-            { 
-                label: 'Quantité', 
-                fieldName: 'Quantity', 
-                type: 'number', 
-                cellAttributes: { class: { fieldName: 'quantityClass' } 
-                } 
-            },
-            { label: 'Stock restant', fieldName: 'QuantityInStock__c', type: 'number' },
-            {
-                label: 'Supprimer',
-                type: 'button-icon',
-                typeAttributes: {
-                    iconName: 'utility:delete',
-                    name: 'delete_line',
-                    alternativeText: 'Supprimer',
-                    title: 'Supprimer',
-                    variant: 'bare'
-                }
+    const baseColumns = [
+        { label: OPTY_COL_PRODUCT_NAME, fieldName: 'productName', type: 'text' },
+        { label: OPTY_COL_UNIT_PRICE, fieldName: 'UnitPrice', type: 'currency' },
+        { label: OPTY_COL_TOTAL_PRICE, fieldName: 'TotalPrice', type: 'currency' },
+        { 
+            label: OPTY_COL_QUANTITY, 
+            fieldName: 'Quantity', 
+            type: 'number', 
+            cellAttributes: { 
+                class: { fieldName: 'quantityClass' } 
+            } 
+        },
+        { label: OPTY_COL_STOCK_LEFT, fieldName: 'QuantityInStock__c', type: 'number' },
+        {
+            label: OPTY_COL_DELETE,
+            type: 'button-icon',
+            typeAttributes: {
+                iconName: 'utility:delete',
+                name: 'delete_line',
+                alternativeText: OPTY_ACTION_DELETE,
+                title: OPTY_ACTION_DELETE,
+                variant: 'bare'
             }
-        ];
-
-        if (this.isAdmin) {
-            baseColumns.push({
-                label: 'Voir produit',
-                type: 'button',
-                typeAttributes: {
-                    label: 'Voir produit',
-                    name: 'view_product',
-                    iconName: 'utility:preview',
-                    variant: 'brand-outline'
-                }
-            });
         }
+    ];
 
-        this.columns = baseColumns;
+    if (this.isAdmin) {
+        baseColumns.push({
+            label: OPTY_COL_VIEW_PRODUCT,
+            type: 'button',
+            typeAttributes: {
+                label: OPTY_COL_VIEW_PRODUCT,
+                name: 'view_product',
+                iconName: 'utility:preview',
+                variant: 'brand-outline'
+            }
+        });
     }
+
+    this.columns = baseColumns;
+}
+
 
     getRowClass(row) { 
         return row.rowClass; 
