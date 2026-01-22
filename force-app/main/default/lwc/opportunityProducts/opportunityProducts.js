@@ -7,6 +7,8 @@ import { refreshApex } from '@salesforce/apex';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { NavigationMixin } from 'lightning/navigation';
 
+
+
 //traduction internationale
 import OPTY_PRODUCTS from '@salesforce/label/c.OPTY_PRODUCTS';
 import SALES_REP from '@salesforce/label/c.SALES_REP';
@@ -22,6 +24,10 @@ import OPTY_EMPTY_TEXT from '@salesforce/label/c.OPTY_EMPTY_TEXT';
 import OPTY_QUANTITY_WARNING_TEXT from '@salesforce/label/c.OPTY_QUANTITY_WARNING_TEXT';
 
 
+//rafraichissement auto au focus
+import { getRecord } from 'lightning/uiRecordApi';
+import UI_REFRESH_TIMESTAMP from '@salesforce/schema/Opportunity.UI_Refresh_Timestamp__c';
+
 
 
 export default class OpportunityProducts extends NavigationMixin(LightningElement) {
@@ -30,12 +36,39 @@ export default class OpportunityProducts extends NavigationMixin(LightningElemen
     profileName;
     profileId;
 
+    
+
     // Pour refreshApex
     wiredProductsResult;
 
+    // ===== Refresh full page when Flow updates Opportunity =====
+lastRefreshValue;
+
+@wire(getRecord, { recordId: '$recordId', fields: [UI_REFRESH_TIMESTAMP] })
+wiredOpportunity({ data, error }) {
+    if (data) {
+        const currentValue = data.fields.UI_Refresh_Timestamp__c.value;
+
+        // 1ère fois = on stocke juste, pas de reload
+        if (!this.lastRefreshValue) {
+            this.lastRefreshValue = currentValue;
+            return;
+        }
+
+        // Si le champ change => reload page
+        if (currentValue && currentValue !== this.lastRefreshValue) {
+            this.lastRefreshValue = currentValue;
+            window.location.reload();
+        }
+    } else if (error) {
+        console.error('Erreur wiredOpportunity:', error);
+    }
+}
+    // ===== Fin Refresh full page when Flow updates Opportunity =====
+
     // Wire UNIQUE et fonctionnel
-@wire(getProducts, { opportunityId: '$recordId' })
-wiredProducts(result) {
+    @wire(getProducts, { opportunityId: '$recordId' })
+    wiredProducts(result) {
     this.wiredProductsResult = result;
 
     if (result.data) {
@@ -113,12 +146,28 @@ wiredProducts(result) {
         deleteOpportunityLine({ oppLineId: lineId })
             .then(() => {
                 this.showToast('Succès', 'Ligne supprimée', 'success');
-                return refreshApex(this.wiredProductsResult);
+                window.location.reload();
             })
             .catch(error => {
                 this.showToast('Erreur', error.body.message, 'error');
             });
     }
+
+    
+    connectedCallback() {
+  window.addEventListener('focus', this.handleWindowFocus);
+}
+
+disconnectedCallback() {
+  window.removeEventListener('focus', this.handleWindowFocus);
+}
+
+handleWindowFocus = () => {
+  console.log('REFRESH on focus');
+  if (this.wiredProductsResult) {
+    refreshApex(this.wiredProductsResult);
+  }
+};
 
     // Colonnes dynamiques
     columns = [];
