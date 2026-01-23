@@ -8,7 +8,7 @@ public class OpportunityProductsControllerTest {
 
         // Act : appel du controller
         List<OpportunityLineItem> results =
-            OpportunityProductController.getProducts(oli.OpportunityId);
+            OpportunityProductsController.getProducts(oli.OpportunityId);
 
         // Assert : vérifications
         System.assertEquals(1, results.size(), 'Une seule ligne doit être retournée');
@@ -33,5 +33,24 @@ public class OpportunityProductsControllerTest {
             100,
             result.PricebookEntry.Product2.QuantityInStock__c
         );
+    }
+
+    @isTest
+    static void testDeleteOpportunityLine() {
+        // Arrange : création des données via la TestDataFactory
+        OpportunityLineItem oli = TestDataFactory.createOpportunityLineItem();
+        Id oliId = oli.Id;
+
+        // Act : appel du controller pour supprimer la ligne
+        OpportunityProductsController.deleteOpportunityLine(oliId);
+
+        // Assert : vérifier que la ligne a été supprimée
+        List<OpportunityLineItem> deletedItems = [
+            SELECT Id 
+            FROM OpportunityLineItem 
+            WHERE Id = :oliId
+        ];
+
+        System.assertEquals(0, deletedItems.size(), 'OpportunityLineItem doit être supprimée');
     }
 }

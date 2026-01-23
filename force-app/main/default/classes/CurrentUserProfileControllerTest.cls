@@ -11,4 +11,16 @@ public class CurrentUserProfileControllerTest {
             System.assertEquals('Administrateur système', profileName);
         }
     }
+
+    @isTest
+    static void testGetCurrentUserProfileId() {
+        User testUser = TestDataFactory.createTestUser();
+
+        System.runAs(testUser) {
+            String profileId = CurrentUserProfileController.getCurrentUserProfileId();
+
+            // assert correct : on compare un Id avec un Id
+            System.assertNotEquals(null, profileId);
+        }
+    }
 }
