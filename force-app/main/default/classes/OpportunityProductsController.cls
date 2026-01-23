@@ -7,7 +7,7 @@ public with sharing class OpportunityProductsController {
 
     }
 
-    @AuraEnabled(Cacheable=true)
+    @AuraEnabled
     public static void deleteOpportunityLine(Id oppLineId) {
     delete [SELECT Id FROM OpportunityLineItem WHERE Id = :oppLineId];
 }

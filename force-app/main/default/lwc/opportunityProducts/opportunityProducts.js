@@ -6,6 +6,8 @@ import deleteOpportunityLine from '@salesforce/apex/OpportunityProductsControlle
 import { refreshApex } from '@salesforce/apex';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { NavigationMixin } from 'lightning/navigation';
+import { getRecord } from 'lightning/uiRecordApi';
+import UI_REFRESH_TIMESTAMP from '@salesforce/schema/Opportunity.UI_Refresh_Timestamp__c';
 
 
 
@@ -27,9 +29,7 @@ import TOAST_DELETE_LINE_SUCCESS from '@salesforce/label/c.TOAST_DELETE_LINE_SUC
 import TOAST_ERROR_TITLE from '@salesforce/label/c.TOAST_ERROR_TITLE';
 
 
-//rafraichissement auto au focus
-import { getRecord } from 'lightning/uiRecordApi';
-import UI_REFRESH_TIMESTAMP from '@salesforce/schema/Opportunity.UI_Refresh_Timestamp__c';
+ //rafraichissement auto au focus
 
 
 
@@ -44,30 +44,24 @@ export default class OpportunityProducts extends NavigationMixin(LightningElemen
     // Pour refreshApex
     wiredProductsResult;
 
-    // ===== Refresh full page when Flow updates Opportunity =====
-lastRefreshValue;
+    lastRefreshValue;
 
-@wire(getRecord, { recordId: '$recordId', fields: [UI_REFRESH_TIMESTAMP] })
-wiredOpportunity({ data, error }) {
-    if (data) {
-        const currentValue = data.fields.UI_Refresh_Timestamp__c.value;
+    @wire(getRecord, { recordId: '$recordId', fields: [UI_REFRESH_TIMESTAMP] })
+    wiredOpportunity({ data, error }) {
+        if (data?.fields?.UI_Refresh_Timestamp__c) {
+            const currentValue = data.fields.UI_Refresh_Timestamp__c.value;
 
-        // 1ère fois = on stocke juste, pas de reload
-        if (!this.lastRefreshValue) {
-            this.lastRefreshValue = currentValue;
-            return;
+            if (this.lastRefreshValue === undefined) {
+                this.lastRefreshValue = currentValue;
+                return;
+            }
+
+            if (currentValue && currentValue !== this.lastRefreshValue) {
+                this.lastRefreshValue = currentValue;
+                window.location.reload();
+            }
         }
-
-        // Si le champ change => reload page
-        if (currentValue && currentValue !== this.lastRefreshValue) {
-            this.lastRefreshValue = currentValue;
-            window.location.reload();
-        }
-    } else if (error) {
-        console.error('Erreur wiredOpportunity:', error);
     }
-}
-    // ===== Fin Refresh full page when Flow updates Opportunity =====
 
     // Wire UNIQUE et fonctionnel
     @wire(getProducts, { opportunityId: '$recordId' })
@@ -144,12 +138,12 @@ wiredOpportunity({ data, error }) {
 }
 
 
-    // Suppression + refresh automatique
+    // Suppression + refresh automatique via Flow
     deleteLine(lineId) {
         deleteOpportunityLine({ oppLineId: lineId })
             .then(() => {
                 this.showToast(TOAST_SUCCESS_TITLE, TOAST_DELETE_LINE_SUCCESS, 'success');
-                window.location.reload();
+                // Flow will update timestamp and trigger reload
             })
             .catch(error => {
                 this.showToast(TOAST_ERROR_TITLE, error.body.message, 'error');
